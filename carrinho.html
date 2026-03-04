@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrinho - Mozshopping</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --gray: #6b7280;
+        }
+
+        body {
+            background: #f9fafb;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            color: var(--dark);
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--gray);
+            font-size: 12px;
+            position: relative;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cart-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .cart-header {
+            padding: 30px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .cart-header h1 {
+            font-size: 28px;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .cart-items {
+            padding: 20px;
+        }
+
+        .cart-item {
+            display: grid;
+            grid-template-columns: 100px 1fr auto auto;
+            gap: 20px;
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            align-items: center;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .cart-item-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .cart-item-info h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .cart-item-type {
+            font-size: 13px;
+            color: var(--gray);
+        }
+
+        .cart-item-price {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .cart-item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quantity-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .quantity-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+        }
+
+        .cart-summary {
+            background: #f9fafb;
+            padding: 30px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            color: var(--gray);
+        }
+
+        .summary-row.total {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .frete-gratis {
+            color: var(--success);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 60px;
+        }
+
+        .empty-cart i {
+            font-size: 64px;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+
+        .continue-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .login-prompt {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .login-prompt i {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .login-prompt h2 {
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background: var(--dark);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 40px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #374151;
+        }
+
+        .notificacao {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--success);
+            z-index: 9999;
+        }
+
+        .notificacao.erro {
+            border-left-color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html"><h1>Moz<span>shopping</span></h1></a>
+            </div>
+
+            <div class="header-actions">
+                <a href="index.html" class="header-icon">
+                    <i class="fas fa-home"></i>
+                    <span>Início</span>
+                </a>
+                <a href="carrinho.html" class="header-icon cart-icon">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Carrinho</span>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <div class="header-icon" id="userSection"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div id="cartContent"></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2024 Mozshopping. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let currentUser = null;
+        let carrinho = [];
+        let todosProdutos = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            observarAuth(async (user) => {
+                currentUser = user?.logado ? user : null;
+                
+                if (currentUser) {
+                    await carregarProdutos();
+                    carregarCarrinho();
+                } else {
+                    mostrarLoginPrompt();
+                }
+                
+                atualizarInterfaceUsuario();
+            });
+        });
+
+        async function carregarProdutos() {
+            todosProdutos = await buscarProdutos();
+        }
+
+        function carregarCarrinho() {
+            if (!currentUser) return;
+            
+            const carrinhoKey = `carrinho_${currentUser.uid}`;
+            carrinho = JSON.parse(localStorage.getItem(carrinhoKey)) || [];
+            
+            renderizarCarrinho();
+            atualizarContador();
+        }
+
+        function salvarCarrinho() {
+            if (currentUser) {
+                const carrinhoKey = `carrinho_${currentUser.uid}`;
+                localStorage.setItem(carrinhoKey, JSON.stringify(carrinho));
+            }
+        }
+
+        function renderizarCarrinho() {
+            if (carrinho.length === 0) {
+                document.getElementById('cartContent').innerHTML = `
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h2>Seu carrinho está vazio</h2>
+                        <p>Que tal dar uma olhada em nossos produtos?</p>
+                        <a href="index.html" class="continue-btn">Continuar Comprando</a>
+                    </div>
+                `;
+                return;
+            }
+
+            let subtotal = 0;
+            let itemsHTML = '';
+
+            carrinho.forEach(item => {
+                const produto = todosProdutos.find(p => p.id === item.id) || item;
+                const preco = produto.preco || 0;
+                const quantidade = item.quantidade || 1;
+                const totalItem = preco * quantidade;
+                subtotal += totalItem;
+
+                itemsHTML += `
+                    <div class="cart-item" data-id="${item.id}">
+                        <img src="${produto.imagem}" class="cart-item-image">
+                        <div class="cart-item-info">
+                            <h3>${produto.nome}</h3>
+                            <span class="cart-item-type">${produto.tipo === 'digital' ? '📱 Digital' : '📦 Físico'}</span>
+                        </div>
+                        <div class="cart-item-price">R$ ${preco.toFixed(2)}</div>
+                        <div class="cart-item-quantity">
+                            <button class="quantity-btn" onclick="alterarQuantidade('${item.id}', -1)">-</button>
+                            <span>${quantidade}</span>
+                            <button class="quantity-btn" onclick="alterarQuantidade('${item.id}', 1)">+</button>
+                        </div>
+                        <button class="remove-btn" onclick="removerItem('${item.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+
+            const frete = subtotal > 200 ? 0 : 15.90;
+            const total = subtotal + frete;
+
+            document.getElementById('cartContent').innerHTML = `
+                <div class="cart-container">
+                    <div class="cart-header">
+                        <h1>Meu Carrinho</h1>
+                        <p>${carrinho.length} ${carrinho.length === 1 ? 'item' : 'itens'}</p>
+                    </div>
+                    <div class="cart-items">
+                        ${itemsHTML}
+                    </div>
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span>R$ ${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Frete:</span>
+                            <span>${frete === 0 ? 'Grátis' : 'R$ ' + frete.toFixed(2)}</span>
+                        </div>
+                        ${frete === 0 ? '<div class="frete-gratis">🎉 Frete grátis!</div>' : ''}
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span>R$ ${total.toFixed(2)}</span>
+                        </div>
+                        <button class="checkout-btn" onclick="finalizarCompra()">
+                            Finalizar Compra
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function alterarQuantidade(id, delta) {
+            const item = carrinho.find(i => i.id === id);
+            if (item) {
+                item.quantidade = (item.quantidade || 1) + delta;
+                if (item.quantidade <= 0) {
+                    carrinho = carrinho.filter(i => i.id !== id);
+                }
+                salvarCarrinho();
+                renderizarCarrinho();
+                atualizarContador();
+            }
+        }
+
+        function removerItem(id) {
+            carrinho = carrinho.filter(i => i.id !== id);
+            salvarCarrinho();
+            renderizarCarrinho();
+            atualizarContador();
+        }
+
+        function finalizarCompra() {
+            alert('Compra finalizada! Obrigado por comprar na Mozshopping.');
+            carrinho = [];
+            salvarCarrinho();
+            renderizarCarrinho();
+            atualizarContador();
+        }
+
+        function atualizarContador() {
+            const total = carrinho.reduce((acc, item) => acc + (item.quantidade || 1), 0);
+            document.getElementById('cartCount').textContent = total;
+        }
+
+        function mostrarLoginPrompt() {
+            document.getElementById('cartContent').innerHTML = `
+                <div class="login-prompt">
+                    <i class="fas fa-lock"></i>
+                    <h2>Faça login para ver seu carrinho</h2>
+                    <p>Você precisa estar logado para acessar o carrinho.</p>
+                    <a href="login.html" class="continue-btn">Fazer Login</a>
+                    <a href="index.html" class="continue-btn" style="background: #6b7280; margin-left: 10px;">Continuar Comprando</a>
+                </div>
+            `;
+        }
+
+        function atualizarInterfaceUsuario() {
+            const userSection = document.getElementById('userSection');
+            if (currentUser) {
+                userSection.innerHTML = `
+                    <div class="header-icon">
+                        <i class="fas fa-user-circle"></i>
+                        <span>${currentUser.nome.split(' ')[0]}</span>
+                    </div>
+                `;
+            } else {
+                userSection.innerHTML = `
+                    <a href="login.html" class="header-icon">
+                        <i class="far fa-user"></i>
+                        <span>Entrar</span>
+                    </a>
+                `;
+            }
+        }
+
+        window.alterarQuantidade = alterarQuantidade;
+        window.removerItem = removerItem;
+        window.finalizarCompra = finalizarCompra;
+    </script>
+</body>
+</html>

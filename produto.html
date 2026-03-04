@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produto - Mozshopping</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- Configuração -->
+    <script src="firebase-config.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --gray: #6b7280;
+            --whatsapp: #25d366;
+        }
+
+        body {
+            background: #f9fafb;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .logo a {
+            text-decoration: none;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            color: var(--dark);
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--gray);
+            font-size: 12px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .header-icon i {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .favoritos-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 40px 0;
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            margin-bottom: 30px;
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        /* Produto Container */
+        .produto-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .produto-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            padding: 40px;
+        }
+
+        /* Galeria de Fotos */
+        .galeria-container {
+            position: relative;
+        }
+
+        .produto-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .badge-fisico {
+            background: var(--success);
+        }
+
+        .badge-digital {
+            background: var(--warning);
+        }
+
+        .badge-externo {
+            background: var(--primary);
+        }
+
+        .badge-condicao {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 6px 12px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 2;
+            backdrop-filter: blur(4px);
+        }
+
+        .imagem-principal {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+        }
+
+        .miniaturas-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .miniatura {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .miniatura:hover, .miniatura.ativa {
+            border-color: var(--primary);
+        }
+
+        /* Informações do Produto */
+        .produto-info {
+            padding: 20px 0;
+        }
+
+        .produto-categoria {
+            font-size: 14px;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .produto-titulo {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        .produto-rating {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .estrelas {
+            color: #fbbf24;
+            font-size: 16px;
+        }
+
+        .reviews-count {
+            color: var(--gray);
+            font-size: 14px;
+        }
+
+        .produto-preco-wrapper {
+            margin-bottom: 20px;
+        }
+
+        .produto-preco {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .produto-preco-antigo {
+            font-size: 20px;
+            color: var(--gray);
+            text-decoration: line-through;
+            margin-left: 10px;
+        }
+
+        .produto-parcelas {
+            font-size: 16px;
+            color: var(--success);
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .produto-descricao {
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .produto-descricao h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .produto-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--light);
+            border-radius: 12px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .meta-item i {
+            font-size: 24px;
+            color: var(--primary);
+        }
+
+        .meta-item span {
+            font-size: 14px;
+        }
+
+        .estoque-info {
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .estoque-esgotado {
+            color: var(--danger);
+            font-weight: 500;
+        }
+
+        .produto-acoes {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-whatsapp {
+            background: var(--whatsapp);
+            color: white;
+        }
+
+        .btn-whatsapp:hover {
+            background: #128C7E;
+        }
+
+        .btn-external {
+            background: #f97316;
+            color: white;
+        }
+
+        .btn-external:hover {
+            background: #ea580c;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-outline.favorito-ativo {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .produto-compartilhar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .share-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .share-btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .share-btn.whatsapp { background: var(--whatsapp); }
+        .share-btn.facebook { background: #1877f2; }
+        .share-btn.twitter { background: #1da1f2; }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: var(--gray);
+            grid-column: 1 / -1;
+        }
+
+        .error-container {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .error-container i {
+            font-size: 64px;
+            color: var(--danger);
+            margin-bottom: 20px;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 40px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #374151;
+            color: #9ca3af;
+        }
+
+        /* Notificações */
+        .notificacao {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--success);
+        }
+
+        .notificacao.erro {
+            border-left-color: var(--danger);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .produto-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+            
+            .produto-titulo {
+                font-size: 24px;
+            }
+            
+            .produto-preco {
+                font-size: 28px;
+            }
+            
+            .imagem-principal {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html"><h1>Moz<span>shopping</span></h1></a>
+            </div>
+
+            <div class="header-actions">
+                <a href="index.html" class="header-icon">
+                    <i class="fas fa-home"></i>
+                    <span>Início</span>
+                </a>
+                <a href="login.html" class="header-icon">
+                    <i class="far fa-user"></i>
+                    <span>Entrar</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div id="produtoContainer">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Carregando produto...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2024 Mozshopping Moçambique. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================
+        // VARIÁVEIS GLOBAIS
+        // ============================================
+        
+        let produtoAtual = null;
+        let currentUser = null;
+        let favoritos = [];
+
+        // ============================================
+        // INICIALIZAÇÃO
+        // ============================================
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const produtoId = urlParams.get('id');
+            
+            if (!produtoId) {
+                mostrarErro('ID do produto não fornecido');
+                return;
+            }
+            
+            await carregarProduto(produtoId);
+            observarAuth(atualizarInterfaceUsuario);
+            carregarFavoritos();
+        });
+
+        // ============================================
+        // FUNÇÃO PARA FORMATAR PREÇO (TRATA STRING OU NÚMERO)
+        // ============================================
+        
+        function formatarPreco(preco) {
+            if (preco === null || preco === undefined) return '0';
+            
+            // Se já for string, retorna ela mesma (já vem formatada)
+            if (typeof preco === 'string') {
+                return preco;
+            }
+            
+            // Se for número, formata com 2 casas decimais
+            if (typeof preco === 'number' && !isNaN(preco)) {
+                return preco.toFixed(2);
+            }
+            
+            return '0';
+        }
+
+        // ============================================
+        // CARREGAR PRODUTO
+        // ============================================
+        
+        async function carregarProduto(id) {
+            try {
+                produtoAtual = await buscarProduto(id);
+                
+                if (!produtoAtual) {
+                    mostrarErro('Produto não encontrado');
+                    return;
+                }
+                
+                renderizarProduto();
+                
+            } catch (error) {
+                console.error('Erro ao carregar produto:', error);
+                mostrarErro('Erro ao carregar produto');
+            }
+        }
+
+        function mostrarErro(mensagem) {
+            document.getElementById('produtoContainer').innerHTML = `
+                <div class="error-container">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h2>Ops! Algo deu errado</h2>
+                    <p>${mensagem}</p>
+                    <a href="index.html" class="btn btn-primary" style="display: inline-block; margin-top: 20px;">
+                        Voltar para loja
+                    </a>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // RENDERIZAR PRODUTO (CORRIGIDO)
+        // ============================================
+        
+        function renderizarProduto() {
+            const p = produtoAtual;
+            
+            // CORREÇÃO: Usar a função formatarPreco
+            const precoFormatado = formatarPreco(p.preco);
+            const precoAntigoFormatado = p.precoAntigo ? formatarPreco(p.precoAntigo) : null;
+            
+            // Badge do tipo
+            const badgeClass = p.tipo === 'fisico' ? 'badge-fisico' : 
+                              p.tipo === 'digital' ? 'badge-digital' : 'badge-externo';
+            const badgeText = p.tipo === 'fisico' ? '📦 Produto Físico' : 
+                             p.tipo === 'digital' ? '💻 Produto Digital' : '🔗 Produto Afiliado';
+            
+            // Badge de condição
+            const condicaoTexto = p.condicao ? {
+                'novo': '🆕 Novo',
+                'usado': '🔄 Usado',
+                'recondicionado': '🔧 Recondicionado',
+                'como-novo': '✨ Como Novo'
+            }[p.condicao] : '';
+            
+            // Verificar favorito
+            const isFavorito = favoritos.includes(p.id);
+            
+            // Gerar estrelas
+            const estrelas = gerarEstrelas(p.rating || 4.5);
+            
+            // Parcelas
+            const parcelas = p.parcelas && p.parcelas > 1 ? p.parcelas : null;
+            
+            // Array de imagens
+            const imagens = p.imagens && p.imagens.length > 0 ? p.imagens : [p.imagem || 'https://via.placeholder.com/800x600'];
+            
+            // Miniaturas
+            let miniaturasHtml = '';
+            imagens.forEach((img, index) => {
+                miniaturasHtml += `
+                    <img src="${img}" 
+                         class="miniatura ${index === 0 ? 'ativa' : ''}" 
+                         onclick="mudarImagem(${index})"
+                         alt="Miniatura ${index + 1}">
+                `;
+            });
+            
+            // Informação de estoque
+            let estoqueInfo = '';
+            if (p.tipo === 'fisico') {
+                if (p.estoque > 0) {
+                    estoqueInfo = `<span class="estoque-info"><i class="fas fa-check-circle"></i> Em estoque: ${p.estoque} unidades</span>`;
+                } else {
+                    estoqueInfo = `<span class="estoque-esgotado"><i class="fas fa-times-circle"></i> Esgotado</span>`;
+                }
+            } else if (p.tipo === 'digital') {
+                estoqueInfo = `<span class="estoque-info"><i class="fas fa-infinity"></i> Disponível (download imediato)</span>`;
+            }
+            
+            // Localização
+            const localizacao = p.localizacao ? `
+                <div class="meta-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>${p.localizacao}</span>
+                </div>
+            ` : '';
+            
+            // Botão principal
+            let botaoPrincipal = '';
+            if (p.tipo === 'externo' && p.linkExterno) {
+                botaoPrincipal = `
+                    <a href="${p.linkExterno}" target="_blank" class="btn btn-external">
+                        <i class="fas fa-external-link-alt"></i> Acessar Site do Parceiro
+                    </a>
+                `;
+            } else if (p.tipo === 'fisico' && p.whatsappNumero) {
+                const mensagem = encodeURIComponent(
+                    (p.whatsappMensagem || 'Olá! Tenho interesse no produto [NOME] (ID: [ID]).')
+                        .replace('[NOME]', p.nome)
+                        .replace('[ID]', p.id)
+                );
+                const whatsappUrl = `https://wa.me/${p.whatsappNumero.replace(/\D/g, '')}?text=${mensagem}`;
+                botaoPrincipal = `
+                    <a href="${whatsappUrl}" target="_blank" class="btn btn-whatsapp">
+                        <i class="fab fa-whatsapp"></i> Conversar no WhatsApp
+                    </a>
+                `;
+            } else {
+                botaoPrincipal = `
+                    <button class="btn btn-primary" onclick="alert('Função em desenvolvimento')">
+                        <i class="fas fa-shopping-cart"></i> Comprar
+                    </button>
+                `;
+            }
+            
+            const produtoHTML = `
+                <div class="breadcrumb">
+                    <a href="index.html">Home</a> > 
+                    <a href="index.html?categoria=${p.categoria}">${p.categoria || 'Produtos'}</a> > 
+                    <span>${p.nome}</span>
+                </div>
+                
+                <div class="produto-container">
+                    <div class="produto-grid">
+                        <!-- Galeria de Fotos -->
+                        <div class="galeria-container">
+                            <div class="produto-badge ${badgeClass}">${badgeText}</div>
+                            ${condicaoTexto ? `<div class="badge-condicao">${condicaoTexto}</div>` : ''}
+                            
+                            <img src="${imagens[0]}" id="imagemPrincipal" class="imagem-principal" alt="${p.nome}">
+                            
+                            <div class="miniaturas-grid">
+                                ${miniaturasHtml}
+                            </div>
+                        </div>
+                        
+                        <!-- Informações -->
+                        <div class="produto-info">
+                            <span class="produto-categoria">${p.categoria || 'Geral'}</span>
+                            <h1 class="produto-titulo">${p.nome}</h1>
+                            
+                            <div class="produto-rating">
+                                <div class="estrelas">${estrelas}</div>
+                                <span class="reviews-count">(${p.reviews || 0} avaliações)</span>
+                            </div>
+                            
+                            <div class="produto-preco-wrapper">
+                                <span class="produto-preco">${precoFormatado} MZN</span>
+                                ${precoAntigoFormatado ? `<span class="produto-preco-antigo">${precoAntigoFormatado} MZN</span>` : ''}
+                            </div>
+                            
+                            ${parcelas ? `
+                                <div class="produto-parcelas">
+                                    ou ${parcelas}x de ${(parseFloat(p.preco) / parcelas).toFixed(2)} MZN
+                                </div>
+                            ` : ''}
+                            
+                            <div class="produto-descricao">
+                                <h3>Descrição</h3>
+                                <p>${p.descricao || 'Sem descrição disponível.'}</p>
+                            </div>
+                            
+                            <div class="produto-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-box"></i>
+                                    <span>${estoqueInfo}</span>
+                                </div>
+                                ${localizacao}
+                                ${p.parceiro ? `
+                                    <div class="meta-item">
+                                        <i class="fas fa-handshake"></i>
+                                        <span>Parceiro: ${p.parceiro}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="produto-acoes">
+                                ${botaoPrincipal}
+                                <button class="btn btn-outline ${isFavorito ? 'favorito-ativo' : ''}" onclick="toggleFavorito()">
+                                    <i class="${isFavorito ? 'fas' : 'far'} fa-heart"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="produto-compartilhar">
+                                <span>Compartilhar:</span>
+                                <div class="share-buttons">
+                                    <a href="#" class="share-btn whatsapp" onclick="compartilharWhatsApp()">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </a>
+                                    <a href="#" class="share-btn facebook" onclick="compartilharFacebook()">
+                                        <i class="fab fa-facebook-f"></i>
+                                    </a>
+                                    <a href="#" class="share-btn twitter" onclick="compartilharTwitter()">
+                                        <i class="fab fa-twitter"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('produtoContainer').innerHTML = produtoHTML;
+        }
+
+        function gerarEstrelas(rating) {
+            let html = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= Math.floor(rating)) {
+                    html += '<i class="fas fa-star"></i>';
+                } else if (i === Math.floor(rating) + 1 && rating % 1 >= 0.5) {
+                    html += '<i class="fas fa-star-half-alt"></i>';
+                } else {
+                    html += '<i class="far fa-star"></i>';
+                }
+            }
+            return html;
+        }
+
+        // ============================================
+        // FUNÇÕES DA GALERIA
+        // ============================================
+        
+        window.mudarImagem = function(index) {
+            const imagens = produtoAtual.imagens?.length > 0 
+                ? produtoAtual.imagens 
+                : [produtoAtual.imagem || 'https://via.placeholder.com/800x600'];
+            
+            document.getElementById('imagemPrincipal').src = imagens[index];
+            
+            document.querySelectorAll('.miniatura').forEach((min, i) => {
+                if (i === index) {
+                    min.classList.add('ativa');
+                } else {
+                    min.classList.remove('ativa');
+                }
+            });
+        };
+
+        // ============================================
+        // FAVORITOS
+        // ============================================
+        
+        function carregarFavoritos() {
+            if (currentUser) {
+                const favoritosKey = `favoritos_${currentUser.uid}`;
+                favoritos = JSON.parse(localStorage.getItem(favoritosKey)) || [];
+            } else {
+                favoritos = JSON.parse(localStorage.getItem('favoritos')) || [];
+            }
+        }
+
+        function salvarFavoritos() {
+            if (currentUser) {
+                const favoritosKey = `favoritos_${currentUser.uid}`;
+                localStorage.setItem(favoritosKey, JSON.stringify(favoritos));
+            } else {
+                localStorage.setItem('favoritos', JSON.stringify(favoritos));
+            }
+        }
+
+        window.toggleFavorito = function() {
+            if (!currentUser) {
+                alert('Faça login para favoritar');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            if (favoritos.includes(produtoAtual.id)) {
+                favoritos = favoritos.filter(f => f !== produtoAtual.id);
+                mostrarNotificacao('Produto removido dos favoritos');
+            } else {
+                favoritos.push(produtoAtual.id);
+                mostrarNotificacao('Produto adicionado aos favoritos');
+            }
+            
+            salvarFavoritos();
+            renderizarProduto(); // Recarrega para atualizar botão
+        };
+
+        // ============================================
+        // COMPARTILHAR
+        // ============================================
+        
+        window.compartilharWhatsApp = function() {
+            const texto = `Olha só este produto que encontrei na Mozshopping: ${produtoAtual.nome}`;
+            const url = window.location.href;
+            window.open(`https://wa.me/?text=${encodeURIComponent(texto + ' ' + url)}`, '_blank');
+        };
+
+        window.compartilharFacebook = function() {
+            const url = window.location.href;
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+        };
+
+        window.compartilharTwitter = function() {
+            const texto = `Confira ${produtoAtual.nome} na Mozshopping`;
+            const url = window.location.href;
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(texto)}&url=${encodeURIComponent(url)}`, '_blank');
+        };
+
+        // ============================================
+        // NOTIFICAÇÕES
+        // ============================================
+        
+        function mostrarNotificacao(mensagem, tipo = 'sucesso') {
+            const notif = document.createElement('div');
+            notif.className = `notificacao ${tipo === 'erro' ? 'erro' : ''}`;
+            notif.innerHTML = `<i class="fas ${tipo === 'erro' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${mensagem}`;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        // ============================================
+        // AUTENTICAÇÃO
+        // ============================================
+        
+        function atualizarInterfaceUsuario(user) {
+            currentUser = user?.logado ? user : null;
+        }
+    </script>
+</body>
+</html>
